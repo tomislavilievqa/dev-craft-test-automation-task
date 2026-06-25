@@ -23,36 +23,42 @@ A production-ready UI automation framework built with **Playwright + TypeScript*
 project-root/
 │
 ├── tests/
+│   ├── navigation/
+│   │   └── navigation.spec.ts           # NAV-001: login page → "Join here" → registration
 │   └── registration/
-│       └── registration.spec.ts     # TC-001 (automated) + TC-002–010 (TODO manual)
+│       └── registration.spec.ts         # TC-001 (automated) + TC-002–011 (skip/todo)
 │
 ├── pages/
-│   ├── login.page.ts                # Login page POM
-│   └── registration.page.ts        # Registration page POM
+│   ├── login.page.ts                    # Login page — locators, actions, navigation
+│   ├── registration.page.ts             # Registration page — form locators inlined
+│   ├── components/
+│   │   └── activation-popup.component.ts  # Reusable activation popup component
+│   └── validators/
+│       ├── registration.validator.ts    # Assertions for registration page
+│       └── activation-popup.validator.ts  # Assertions for activation popup
 │
-├── components/
-│   ├── registration-form.component.ts
-│   └── activation-popup.component.ts
+├── fixtures/
+│   └── pom.fixture.ts                   # Extends Playwright test with typed POM fixtures
 │
-├── validators/
-│   ├── registration.validator.ts
-│   └── activation-popup.validator.ts
+├── types/
+│   └── registration.types.ts            # TypeScript interfaces for test data
 │
 ├── test-data/
-│   └── registration.json
+│   └── registration.json                # Valid user, invalid user, boundary data
 │
 ├── utils/
-│   ├── random-email.util.ts
-│   ├── json-reader.util.ts
-│   └── env.util.ts
+│   ├── random-email.util.ts             # Generates unique emails per test run
+│   ├── json-reader.util.ts              # Type-safe JSON file reader
+│   └── env.util.ts                      # Environment variable helper
 │
 ├── constants/
-│   ├── routes.enum.ts
-│   └── user-type.enum.ts
+│   ├── routes.enum.ts                   # App route constants (/login, /signup, /signup/1)
+│   └── user-type.enum.ts                # User type keys (validUser, invalidUser)
 │
-├── playwright.config.ts
-├── tsconfig.json
-├── .env                             # Not committed — see .env.example
+├── playwright.config.ts                 # Playwright config — chromium, .env, trace/screenshot
+├── eslint.config.js                     # ESLint flat config (v10+)
+├── tsconfig.json                        # Strict TypeScript + path aliases
+├── .env                                 # Part of .gitignore — see .env.example
 ├── .env.example
 ├── .eslintrc.json
 ├── .prettierrc
@@ -141,15 +147,30 @@ npm run format:check
 
 ### Page Object Model (POM)
 
-Each page is a class with locators, actions, and navigation methods. No assertions inside page objects.
+Each page is a class owning its locators and action methods. No assertions live inside page objects — they are kept purely behavioural.
 
-### Component Objects
+### Component Objects (`pages/components/`)
 
-Reusable UI sections (registration form, activation popup) are extracted as components and injected into pages.
+Reusable UI sections shared across pages (e.g. the activation popup, which can appear in both registration and login flows) are extracted as component classes and composed into page objects.
 
-### Validators
+### Validators (`pages/validators/`)
 
-All assertions live in dedicated Validator classes. Each validator receives the `page` and related POM via constructor injection.
+All assertions live in dedicated Validator classes co-located under `pages/validators/`. Each validator receives the `page` and the related POM instance via constructor injection, keeping assertions decoupled from page actions.
+
+### Fixtures (`fixtures/`)
+
+`pom.fixture.ts` extends Playwright's `test` with typed POM fixtures (`loginPage`, `registrationPage`, `registrationValidator`, `activationPopupValidator`). Tests declare only what they need — construction and injection happen automatically.
+
+### Types (`types/`)
+
+TypeScript interfaces for test data structures (e.g. `RegistrationData`) live in `types/`, consumed by the JSON reader util for type-safe data access.
+
+### Test Data (`test-data/`)
+
+`registration.json` holds three categories:
+- `validUser` — a valid email/password pair
+- `invalidUser` — an invalid email/password for negative tests
+- `boundaryData` — exact boundary strings for email (63/64/65-char local parts) and password (71/72/73-char) length tests
 
 ### Waiting Strategy
 
